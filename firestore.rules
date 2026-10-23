@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logueado() { return request.auth != null; }
+    function esCoord() {
+      return logueado() &&
+        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.rol == 'coordinacion';
+    }
+
+    // Roles: solo se crean a mano en Firebase Console. Cada quien puede leer el suyo.
+    match /roles/{uid} {
+      allow read: if logueado() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Perfil de la familia: historial de alumnos y teléfono de confirmación.
+    match /usuarios/{uid} {
+      allow read: if (logueado() && request.auth.uid == uid) || esCoord();
+      allow create, update: if logueado() && request.auth.uid == uid;
+    }
+
+    match /solicitudes/{id} {
+      allow read: if (logueado() && resource.data.uid == request.auth.uid) || esCoord();
+      allow create: if logueado()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.estado == 'nueva'
+        && request.resource.data.turno in ['manana', 'tarde']
+        && request.resource.data.tipo in ['no_sube', 'sube_distinto', 'no_baja', 'baja_distinto']
+        && request.resource.data.alumno is string && request.resource.data.alumno.size() > 1
+        && request.resource.data.telefono is string && request.resource.data.telefono.size() == 10
+        && (!('identificacion' in request.resource.data) || request.resource.data.identificacion.size() < 900000);
+      // Solo coordinación cambia el estado (y nada más).
+      allow update: if esCoord()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidaEn', 'atendidaPor']);
+      allow delete: if false;
+    }
+
+    match /contactos/{id} {
+      allow read: if esCoord();
+      allow create: if logueado() && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Tokens de avisos push (uno por celular). Las Cloud Functions los leen con privilegios de servidor.
+    match /tokens/{token} {
+      allow create, update: if logueado()
+        && request.resource.data.uid == request.auth.uid
+        && (request.resource.data.rol == 'familia' || (request.resource.data.rol == 'coordinacion' && esCoord()));
+      allow delete: if logueado() && resource.data.uid == request.auth.uid;
+      allow read: if false;
+    }
+  }
+}
