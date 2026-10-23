@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4D8ABB">
+<title>Transporte Bilbao · Solicitudes</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Transporte">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+
+  <!-- ===================== CARGANDO ===================== -->
+  <section id="s-cargando" class="screen centro">Cargando…</section>
+
+  <!-- ===================== ACCESO ===================== -->
+  <section id="s-login" class="screen" hidden>
+    <div class="hero">
+      <div class="logo"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11z"/><path d="M5 11h14M9 7h6"/><circle cx="8.5" cy="17.5" r="1.6"/><circle cx="15.5" cy="17.5" r="1.6"/></svg></div>
+      <h1>Transporte Bilbao</h1>
+      <p>Solicitudes de cambio de subida y bajada</p>
+    </div>
+    <form id="form-login" class="tarjeta-login" novalidate>
+      <h2 id="login-titulo">Iniciar sesión</h2>
+      <div id="login-error" class="mensaje-error" role="alert" hidden></div>
+      <div class="campo">
+        <label for="l-correo">Correo electrónico</label>
+        <input id="l-correo" class="input" type="email" autocomplete="email" inputmode="email" placeholder="nombre@correo.com" required>
+      </div>
+      <div class="campo">
+        <label for="l-clave">Contraseña</label>
+        <div class="pass">
+          <input id="l-clave" class="input" type="password" autocomplete="current-password" placeholder="Tu contraseña" required>
+          <button type="button" id="ver-clave" aria-label="Mostrar contraseña"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+      <button id="btn-entrar" class="btn btn--primario" type="submit">Entrar</button>
+      <button id="btn-olvide" class="link" type="button">¿Olvidaste tu contraseña?</button>
+      <button id="btn-modo" class="link" type="button" hidden>¿Primera vez? Crea tu cuenta</button>
+    </form>
+    <div class="pie">Colegio Bilbao · Coordinación de Transporte<br>Acceso solo para familias registradas</div>
+  </section>
+
+  <!-- ===================== INICIO ===================== -->
+  <section id="s-inicio" class="screen" hidden>
+    <header class="top">
+      <div class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11z"/><path d="M5 11h14M9 7h6"/><circle cx="8.5" cy="17.5" r="1.6"/><circle cx="15.5" cy="17.5" r="1.6"/></svg></div>
+      <div class="top__txt"><span class="top__titulo">Transporte Bilbao</span><span class="top__sub" id="inicio-correo"></span></div>
+      <button class="icon-btn" id="btn-salir" type="button" aria-label="Cerrar sesión"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+    </header>
+
+    <div class="contenido">
+      <div id="aviso-push" class="aviso" hidden>
+        <span id="aviso-push-txt">Activa los avisos para saber en cuanto coordinación atienda tu solicitud.</span>
+        <button id="btn-avisos" class="btn btn--borde" type="button">Activar avisos</button>
+      </div>
+
+      <div class="caja">
+        <label class="etiqueta" for="alumno">Nombre del alumno</label>
+        <input id="alumno" class="input" type="text" autocomplete="off" autocapitalize="words" placeholder="Escribe el nombre completo">
+        <div id="recientes-wrap" hidden>
+          <div class="mini-titulo" style="margin:4px 0 8px">Usados antes</div>
+          <div class="chips" id="chips"></div>
+        </div>
+      </div>
+
+      <h2 class="seccion-titulo">¿Qué cambio necesitas?</h2>
+      <div class="turnos">
+        <button class="turno turno--manana" type="button" data-turno="manana">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <strong>Mañana</strong><span>No sube o sube en otro lugar</span>
+        </button>
+        <button class="turno turno--tarde" type="button" data-turno="tarde">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 18a5 5 0 0 0-10 0"/><path d="M12 2v7M4.2 10.2l1.4 1.4M1 18h2M21 18h2M18.4 11.6l1.4-1.4M23 22H1M8 6l4 4 4-4"/></svg>
+          <strong>Tarde</strong><span>No baja o baja en otro lugar</span>
+        </button>
+      </div>
+
+      <h2 class="seccion-titulo">Coordinación de transporte</h2>
+      <div class="lista">
+        <button class="fila" type="button" data-canal="whatsapp">
+          <span class="fila__icono ic-wa"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/></svg></span>
+          <span class="fila__txt"><b>Enviar mensaje</b><small>Abre WhatsApp con coordinación</small></span>
+          <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+        <button class="fila" type="button" data-canal="llamada">
+          <span class="fila__icono ic-tel"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span>
+          <span class="fila__txt"><b>Llamar</b><small>Marca al celular de coordinación</small></span>
+          <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+        <button class="fila" type="button" data-canal="reporte">
+          <span class="fila__icono ic-mail"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+          <span class="fila__txt"><b>Levantar un reporte</b><small>Abre Gmail con el correo de coordinación</small></span>
+          <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div id="mis-wrap" hidden>
+        <h2 class="seccion-titulo" style="margin-bottom:12px">Mis solicitudes recientes</h2>
+        <div class="lista" id="mis-solicitudes"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SOLICITUD ===================== -->
+  <section id="s-form" class="screen" hidden>
+    <header class="top" id="form-top">
+      <button class="icon-btn" type="button" data-ir="s-inicio" aria-label="Volver al inicio"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+      <div class="top__txt"><span class="top__titulo" id="form-titulo">Turno</span><span class="top__sub" id="form-alumno"></span></div>
+    </header>
+
+    <form id="form-solicitud" class="contenido" novalidate>
+      <div class="campo">
+        <label for="f-fecha">¿Para qué día?</label>
+        <input id="f-fecha" class="input" type="date" required>
+      </div>
+
+      <div class="campo">
+        <span class="etiqueta" id="opciones-label">Elige el cambio</span>
+        <div id="opciones" role="radiogroup" aria-labelledby="opciones-label" style="display:flex;flex-direction:column;gap:12px"></div>
+      </div>
+
+      <div id="bloque-distinto" class="caja" hidden>
+        <div class="campo">
+          <label for="f-dir" id="f-dir-label">Dirección <span class="req">*</span></label>
+          <textarea id="f-dir" class="textarea" rows="3" placeholder="Calle, número, colonia y una referencia (ej. portón verde)"></textarea>
+        </div>
+        <div class="campo" id="bloque-recibe" hidden>
+          <label for="f-recibe">¿Quién lo recibe? <span class="req">*</span></label>
+          <input id="f-recibe" class="input" type="text" autocapitalize="words" placeholder="Nombre completo y parentesco">
+          <span class="ayuda">Obligatorio. Solo se entrega a esta persona.</span>
+        </div>
+        <div class="campo" id="bloque-id" hidden>
+          <span class="etiqueta">Identificación de quien recibe</span>
+          <label class="subir" for="f-id">
+            <span class="fila__icono" style="background:var(--tarde-bg)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--tarde-icono)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.4 1.8-2 3-2s2.4.6 3 2M14 10h4M14 13h3"/></svg></span>
+            <span class="fila__txt"><b id="f-id-titulo">Tomar foto o adjuntar</b><small>INE, pasaporte o licencia (foto)</small></span>
+            <input id="f-id" type="file" accept="image/*">
+          </label>
+          <img id="f-id-vista" class="vista-id" alt="Vista previa de la identificación" hidden>
+        </div>
+      </div>
+
+      <div class="caja">
+        <div class="campo">
+          <label for="f-tel">Recibir confirmación al número <span class="req">*</span></label>
+          <input id="f-tel" class="input" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="10 dígitos">
+          <span class="ayuda">Se guarda para la próxima vez. Coordinación verá este número para responderte.</span>
+        </div>
+      </div>
+
+      <div id="form-error" class="mensaje-error" role="alert" hidden></div>
+
+      <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:env(safe-area-inset-bottom)">
+        <button id="btn-enviar" class="btn btn--primario" type="submit">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+          <span>Enviar solicitud</span>
+        </button>
+        <span class="ayuda" style="text-align:center;font-size:13px">Coordinación recibe el aviso en su celular al instante</span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===================== ENVIADA ===================== -->
+  <section id="s-enviado" class="screen" hidden>
+    <div class="contenido" style="padding-top:calc(40px + env(safe-area-inset-top))">
+      <div class="check"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--verde)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></div>
+      <h2 class="titulo-grande">Solicitud enviada</h2>
+      <p class="texto-centro">Coordinación de transporte ya recibió el aviso. Te avisaremos aquí cuando la atienda.</p>
+      <dl class="resumen" id="resumen"></dl>
+      <span class="ayuda" style="text-align:center;font-size:14px;font-weight:600">¿Es urgente? Comunícate directo</span>
+      <div class="dos">
+        <button class="btn btn--borde" type="button" data-canal="whatsapp" style="color:var(--verde)">WhatsApp</button>
+        <button class="btn btn--borde" type="button" data-canal="llamada">Llamar</button>
+      </div>
+      <button class="btn btn--primario" type="button" data-ir="s-inicio" style="margin-top:auto">Volver al inicio</button>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-messaging-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+  const A = window.App;
+  const { auth, db, C } = A;
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  const OPCIONES = {
+    manana: [
+      { id: 'no_sube', t: 'No sube', d: 'Ese día no tomará la unidad', icono: 'x' },
+      { id: 'sube_distinto', t: 'Sube en lugar distinto', d: 'Indica dónde pasará por él', icono: 'pin' }
+    ],
+    tarde: [
+      { id: 'no_baja', t: 'No baja', d: 'Ese día no regresa en la unidad', icono: 'x' },
+      { id: 'baja_distinto', t: 'Baja en lugar distinto', d: 'Dirección, quién recibe e identificación', icono: 'pin' }
+    ]
+  };
+  const ICONOS = {
+    x: '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>',
+    pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'
+  };
+
+  let perfil = { alumnos: [], telefono: '' };
+  let modoRegistro = false;
+  let turno = null, tipo = null, idData = null;
+  let unsubMis = null;
+
+  /* ---------- Navegación ---------- */
+  function ir(id) {
+    $$('.screen').forEach((s) => { s.hidden = s.id !== id; });
+    window.scrollTo(0, 0);
+  }
+  $$('[data-ir]').forEach((b) => b.addEventListener('click', () => ir(b.dataset.ir)));
+
+  /* ---------- Acceso ---------- */
+  if (C.permitirRegistro) $('#btn-modo').hidden = false;
+  $('#ver-clave').addEventListener('click', () => {
+    const i = $('#l-clave'); const ver = i.type === 'password';
+    i.type = ver ? 'text' : 'password';
+    $('#ver-clave').setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+  $('#btn-modo').addEventListener('click', () => {
+    modoRegistro = !modoRegistro;
+    $('#login-titulo').textContent = modoRegistro ? 'Crear cuenta' : 'Iniciar sesión';
+    $('#btn-entrar').textContent = modoRegistro ? 'Crear cuenta' : 'Entrar';
+    $('#btn-modo').textContent = modoRegistro ? 'Ya tengo cuenta, iniciar sesión' : '¿Primera vez? Crea tu cuenta';
+    $('#l-clave').autocomplete = modoRegistro ? 'new-password' : 'current-password';
+    $('#login-error').hidden = true;
+  });
+  function errorLogin(msg) { const e = $('#login-error'); e.textContent = msg; e.hidden = !msg; }
+
+  $('#form-login').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const correo = $('#l-correo').value.trim(), clave = $('#l-clave').value;
+    if (!correo || !clave) return errorLogin('Escribe tu correo y contraseña.');
+    const b = $('#btn-entrar'); b.disabled = true; errorLogin('');
+    try {
+      if (modoRegistro) await auth.createUserWithEmailAndPassword(correo, clave);
+      else await auth.signInWithEmailAndPassword(correo, clave);
+    } catch (e) { errorLogin(A.errorAuth(e)); }
+    b.disabled = false;
+  });
+  $('#btn-olvide').addEventListener('click', async () => {
+    const correo = $('#l-correo').value.trim();
+    if (!correo) return errorLogin('Escribe tu correo arriba y vuelve a tocar "¿Olvidaste tu contraseña?".');
+    try { await auth.sendPasswordResetEmail(correo); A.toast('Te enviamos un correo para cambiar tu contraseña.'); errorLogin(''); }
+    catch (e) { errorLogin(A.errorAuth(e)); }
+  });
+  $('#btn-salir').addEventListener('click', () => auth.signOut());
+
+  auth.onAuthStateChanged(async (u) => {
+    if (unsubMis) { unsubMis(); unsubMis = null; }
+    if (!u) { ir('s-login'); return; }
+    $('#inicio-correo').textContent = u.email || '';
+    const ref = db.collection('usuarios').doc(u.uid);
+    try {
+      const snap = await ref.get();
+      if (snap.exists) perfil = Object.assign({ alumnos: [], telefono: '' }, snap.data());
+      else { perfil = { alumnos: [], telefono: '' }; await ref.set({ email: u.email, alumnos: [], telefono: '', creado: A.TS() }); }
+    } catch (e) { console.error(e); A.toast('No se pudo cargar tu perfil. Revisa tu conexión.'); }
+    pintarRecientes();
+    if (!$('#alumno').value && perfil.alumnos[0]) $('#alumno').value = perfil.alumnos[0];
+    marcarChip();
+    escucharMisSolicitudes(u.uid);
+    revisarAvisos();
+    ir('s-inicio');
+  });
+
+  /* ---------- Avisos push ---------- */
+  async function revisarAvisos() {
+    const soportado = await A.pushSoportado();
+    const caja = $('#aviso-push');
+    if (soportado && Notification.permission === 'granted') {
+      caja.hidden = true;
+      A.activarAvisos('familia', { silencioso: true }); // refresca el token de este celular
+      return;
+    }
+    caja.hidden = false;
+    if (!soportado && A.esIOS && !A.esInstalada) {
+      $('#aviso-push-txt').textContent = 'Para recibir avisos en iPhone: toca Compartir → "Agregar a pantalla de inicio" y abre la app desde ese ícono.';
+      $('#btn-avisos').hidden = true;
+    }
+  }
+  $('#btn-avisos').addEventListener('click', async () => {
+    if (await A.activarAvisos('familia')) $('#aviso-push').hidden = true;
+  });
+  A.escucharEnPrimerPlano((p) => {
+    const n = p.notification || {};
+    A.toast((n.title ? n.title + ' — ' : '') + (n.body || ''));
+  });
+
+  /* ---------- Alumno e historial ---------- */
+  function pintarRecientes() {
+    const chips = $('#chips'); chips.innerHTML = '';
+    perfil.alumnos.slice(0, 6).forEach((n) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = n; b.dataset.nombre = n;
+      b.addEventListener('click', () => { $('#alumno').value = n; marcarChip(); });
+      chips.appendChild(b);
+    });
+    $('#recientes-wrap').hidden = perfil.alumnos.length === 0;
+  }
+  function marcarChip() {
+    const v = $('#alumno').value.trim().toLowerCase();
+    $$('#chips .chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.nombre.toLowerCase() === v)));
+  }
+  $('#alumno').addEventListener('input', marcarChip);
+  const nombreAlumno = () => $('#alumno').value.trim().replace(/\s+/g, ' ');
+
+  /* ---------- Mis solicitudes (estado) ---------- */
+  function escucharMisSolicitudes(uid) {
+    unsubMis = db.collection('solicitudes').where('uid', '==', uid).orderBy('creada', 'desc').limit(5)
+      .onSnapshot((s) => {
+        const cont = $('#mis-solicitudes'); cont.innerHTML = '';
+        s.forEach((d) => {
+          const x = d.data();
+          const fila = document.createElement('div'); fila.className = 'fila';
+          fila.innerHTML =
+            '<span class="pill pill--' + x.turno + '">' + A.TURNOS[x.turno] + '</span>' +
+            '<span class="fila__txt"><b>' + A.esc(x.alumno) + '</b><small>' + A.esc(A.TIPOS[x.tipo]) + ' · ' + A.esc(A.fechaLarga(x.fecha)) + '</small></span>' +
+            '<span class="estado estado--' + x.estado + '">' + (x.estado === 'atendida' ? 'Atendida' : 'Enviada') + '</span>';
+          cont.appendChild(fila);
+        });
+        $('#mis-wrap').hidden = s.empty;
+      }, (e) => console.warn('mis solicitudes', e));
+  }
+
+  /* ---------- Formulario de solicitud ---------- */
+  $$('[data-turno]').forEach((b) => b.addEventListener('click', () => {
+    const n = nombreAlumno();
+    if (!n) { $('#alumno').classList.add('error'); $('#alumno').focus(); A.toast('Primero escribe el nombre del alumno.'); return; }
+    $('#alumno').classList.remove('error');
+    abrirFormulario(b.dataset.turno, n);
+  }));
+
+  function abrirFormulario(t, nombre) {
+    turno = t; tipo = null; idData = null;
+    $('#form-top').className = 'top top--' + t;
+    $('#form-titulo').textContent = 'Turno ' + (t === 'manana' ? 'mañana' : 'tarde');
+    $('#form-alumno').textContent = nombre;
+    $('#f-fecha').value = A.hoyISO(); $('#f-fecha').min = A.hoyISO();
+    $('#f-dir').value = ''; $('#f-recibe').value = ''; $('#f-id').value = '';
+    $('#f-id-vista').hidden = true; $('#f-id-titulo').textContent = 'Tomar foto o adjuntar';
+    $('#f-tel').value = A.telBonito(perfil.telefono || '');
+    $('#f-dir-label').innerHTML = (t === 'manana' ? 'Dirección del lugar de subida' : 'Dirección de bajada') + ' <span class="req">*</span>';
+    $('#form-error').hidden = true;
+    $$('#form-solicitud .error').forEach((e) => e.classList.remove('error'));
+
+    const cont = $('#opciones'); cont.innerHTML = '';
+    OPCIONES[t].forEach((o) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'opcion'; b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', 'false'); b.dataset.tipo = o.id;
+      b.innerHTML = '<span class="opcion__icono"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONOS[o.icono] + '</svg></span>' +
+        '<span class="opcion__txt"><b>' + o.t + '</b><small>' + o.d + '</small></span><span class="radio" aria-hidden="true"></span>';
+      b.addEventListener('click', () => elegirTipo(o.id));
+      cont.appendChild(b);
+    });
+    actualizarBloques();
+    ir('s-form');
+  }
+  function elegirTipo(id) {
+    tipo = id;
+    $$('#opciones .opcion').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.tipo === id)));
+    actualizarBloques();
+  }
+  function actualizarBloques() {
+    const distinto = tipo === 'sube_distinto' || tipo === 'baja_distinto';
+    $('#bloque-distinto').hidden = !distinto;
+    $('#bloque-recibe').hidden = tipo !== 'baja_distinto';
+    $('#bloque-id').hidden = tipo !== 'baja_distinto';
+  }
+
+  /* Foto de identificación: se reduce para guardarla ligera (máx. ~1200 px, JPEG) */
+  $('#f-id').addEventListener('change', async () => {
+    const f = $('#f-id').files[0];
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { A.toast('Adjunta una foto (JPG o PNG) de la identificación.'); return; }
+    try {
+      idData = await reducirImagen(f, 1200, 0.72);
+      $('#f-id-vista').src = idData; $('#f-id-vista').hidden = false;
+      $('#f-id-titulo').textContent = 'Identificación lista · cambiar';
+    } catch (e) { console.error(e); A.toast('No se pudo leer la imagen. Intenta con otra foto.'); }
+  });
+  function reducirImagen(file, max, calidad) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        let w = img.naturalWidth, h = img.naturalHeight;
+        const k = Math.min(1, max / Math.max(w, h)); w = Math.round(w * k); h = Math.round(h * k);
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        let q = calidad, data = cv.toDataURL('image/jpeg', q);
+        while (data.length > 700000 && q > 0.35) { q -= 0.1; data = cv.toDataURL('image/jpeg', q); }
+        res(data);
+      };
+      img.onerror = rej; img.src = url;
+    });
+  }
+
+  function errorForm(msg, campo) {
+    const e = $('#form-error'); e.textContent = msg; e.hidden = !msg;
+    if (campo) { campo.classList.add('error'); campo.focus(); }
+  }
+
+  $('#form-solicitud').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    $$('#form-solicitud .error').forEach((e) => e.classList.remove('error'));
+    const fecha = $('#f-fecha').value;
+    const dir = $('#f-dir').value.trim();
+    const recibe = $('#f-recibe').value.trim();
+    const tel = A.soloDigitos($('#f-tel').value).slice(-10);
+    if (!fecha) return errorForm('Elige el día del cambio.', $('#f-fecha'));
+    if (!tipo) return errorForm('Elige el tipo de cambio.');
+    if ((tipo === 'sube_distinto' || tipo === 'baja_distinto') && dir.length < 8) return errorForm('Escribe la dirección completa.', $('#f-dir'));
+    if (tipo === 'baja_distinto' && recibe.length < 5) return errorForm('Escribe el nombre de quien lo recibe.', $('#f-recibe'));
+    if (tel.length !== 10) return errorForm('Escribe un número de 10 dígitos para recibir la confirmación.', $('#f-tel'));
+    errorForm('');
+
+    const u = auth.currentUser;
+    const alumno = $('#form-alumno').textContent;
+    const btn = $('#btn-enviar'); btn.disabled = true; btn.querySelector('span').textContent = 'Enviando…';
+    const datos = {
+      uid: u.uid, email: u.email || '', alumno: alumno, turno: turno, tipo: tipo, fecha: fecha,
+      direccion: (tipo === 'sube_distinto' || tipo === 'baja_distinto') ? dir : '',
+      recibe: tipo === 'baja_distinto' ? recibe : '',
+      identificacion: tipo === 'baja_distinto' && idData ? idData : '',
+      telefono: tel, estado: 'nueva', creada: A.TS()
+    };
+    try {
+      await db.collection('solicitudes').add(datos);
+      const lista = [alumno].concat(perfil.alumnos.filter((n) => n.toLowerCase() !== alumno.toLowerCase())).slice(0, 6);
+      perfil.alumnos = lista; perfil.telefono = tel;
+      db.collection('usuarios').doc(u.uid).set({ alumnos: lista, telefono: tel }, { merge: true }).catch(console.warn);
+      pintarRecientes(); marcarChip();
+      mostrarResumen(datos);
+      ir('s-enviado');
+    } catch (e) {
+      console.error(e);
+      errorForm('No se pudo enviar. Revisa tu conexión e intenta de nuevo.');
+    }
+    btn.disabled = false; btn.querySelector('span').textContent = 'Enviar solicitud';
+  });
+
+  function mostrarResumen(d) {
+    const filas = [
+      ['Alumno', d.alumno], ['Turno', A.TURNOS[d.turno]], ['Día', A.fechaLarga(d.fecha)], ['Cambio', A.TIPOS[d.tipo]]
+    ];
+    if (d.direccion) filas.push(['Dirección', d.direccion]);
+    if (d.recibe) filas.push(['Recibe', d.recibe]);
+    if (d.tipo === 'baja_distinto') filas.push(['Identificación', d.identificacion ? 'Adjunta' : 'No adjunta']);
+    filas.push(['Confirmación a', A.telBonito(d.telefono)]);
+    $('#resumen').innerHTML = filas.map((f) => '<div><dt>' + f[0] + '</dt><dd>' + A.esc(f[1]) + '</dd></div>').join('');
+  }
+
+  /* ---------- Contacto con coordinación ---------- */
+  $$('[data-canal]').forEach((b) => b.addEventListener('click', () => contactar(b.dataset.canal)));
+  function contactar(canal) {
+    const c = C.coordinacion;
+    const alumno = nombreAlumno() || $('#form-alumno').textContent || '';
+    const intro = 'Hola, Coordinación de Transporte. ' + (alumno ? 'Les escribo sobre ' + alumno + '. ' : '');
+    let url = '';
+    if (canal === 'whatsapp') url = 'https://wa.me/' + A.soloDigitos(c.whatsapp) + '?text=' + encodeURIComponent(intro);
+    if (canal === 'llamada') url = 'tel:+52' + A.soloDigitos(c.telefono).slice(-10);
+    if (canal === 'reporte') {
+      url = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(c.correo) +
+        '&su=' + encodeURIComponent('Reporte de transporte' + (alumno ? ' – ' + alumno : '')) +
+        '&body=' + encodeURIComponent(intro + '\n\nDescribe aquí el reporte:\n');
+    }
+    // Aviso a coordinación de que la familia la contactó (llega como notificación).
+    const u = auth.currentUser;
+    if (u) {
+      db.collection('contactos').add({
+        uid: u.uid, email: u.email || '', alumno: alumno, canal: canal,
+        telefono: perfil.telefono || '', creado: A.TS()
+      }).catch(console.warn);
+    }
+    if (canal === 'llamada') window.location.href = url;
+    else window.open(url, '_blank', 'noopener');
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4D8ABB">
+<title>Coordinación · Solicitudes de transporte</title>
+<link rel="manifest" href="manifest-coordinacion.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coordinación">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0; scrollbar-width: none; }
+  .tab { height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .tab[aria-selected="true"] { background: #fff; color: var(--azul-osc); border-color: #fff; font-weight: 700; }
+  .contador { background: var(--amarillo); color: var(--azul-osc); font-size: 14px; font-weight: 800; border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+  .item { background: #fff; border-radius: 16px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; box-shadow: var(--sombra); border: 0; width: 100%; text-align: left; color: var(--texto); }
+  .item .fila__txt b { font-size: 16px; }
+  .item .fila__txt span { font-size: 14px; color: var(--texto-2); }
+  .vacio { text-align: center; color: var(--suave); padding: 40px 10px; font-size: 15px; }
+  dialog { border: 0; padding: 0; width: min(480px, 100%); max-width: 100%; max-height: 100%; height: 100%; margin: 0 auto; background: var(--fondo); color: var(--texto); }
+  dialog::backdrop { background: rgba(14, 27, 48, .5); }
+  .tel-grande { font-size: 26px; font-weight: 800; letter-spacing: .3px; }
+  .caja-tel { background: #fff; border: 2px solid var(--azul); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .id-grande { width: 100%; border-radius: 12px; background: #fff; }
+</style>
+</head>
+<body>
+<main class="app">
+  <section id="s-cargando" class="screen centro">Cargando…</section>
+
+  <!-- ===================== ACCESO ===================== -->
+  <section id="s-login" class="screen" hidden>
+    <div class="hero">
+      <div class="logo"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v11z"/><path d="M5 11h14M9 7h6"/><circle cx="8.5" cy="17.5" r="1.6"/><circle cx="15.5" cy="17.5" r="1.6"/></svg></div>
+      <h1>Coordinación</h1>
+      <p>Solicitudes de cambio de transporte</p>
+    </div>
+    <form id="form-login" class="tarjeta-login" novalidate>
+      <h2>Iniciar sesión</h2>
+      <div id="login-error" class="mensaje-error" role="alert" hidden></div>
+      <div class="campo"><label for="l-correo">Correo</label><input id="l-correo" class="input" type="email" autocomplete="email" required></div>
+      <div class="campo"><label for="l-clave">Contraseña</label><input id="l-clave" class="input" type="password" autocomplete="current-password" required></div>
+      <button id="btn-entrar" class="btn btn--primario" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <!-- ===================== SIN PERMISO ===================== -->
+  <section id="s-sinpermiso" class="screen centro" hidden style="padding:28px;gap:16px;text-align:center">
+    <p style="font-size:17px;color:var(--texto)">Esta cuenta no tiene permiso de coordinación.</p>
+    <p class="ayuda" id="sinpermiso-uid" style="font-size:13px"></p>
+    <button class="btn btn--primario" type="button" data-salir style="max-width:260px">Cerrar sesión</button>
+  </section>
+
+  <!-- ===================== BANDEJA ===================== -->
+  <section id="s-bandeja" class="screen" hidden>
+    <header class="top" style="flex-direction:column;align-items:stretch;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="top__txt"><span class="top__sub" style="font-weight:600">Coordinación de Transporte</span><span class="top__titulo" style="font-size:22px">Solicitudes</span></div>
+        <span class="contador" id="contador" hidden></span>
+        <button class="icon-btn" id="btn-avisos" type="button" aria-label="Activar avisos en este celular"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
+        <button class="icon-btn" type="button" data-salir aria-label="Cerrar sesión"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Filtrar">
+        <button class="tab" role="tab" data-tab="nuevas" aria-selected="true">Nuevas</button>
+        <button class="tab" role="tab" data-tab="todas" aria-selected="false">Todas</button>
+        <button class="tab" role="tab" data-tab="manana" aria-selected="false">Mañana</button>
+        <button class="tab" role="tab" data-tab="tarde" aria-selected="false">Tarde</button>
+        <button class="tab" role="tab" data-tab="contactos" aria-selected="false">Contactos</button>
+      </div>
+    </header>
+    <div class="contenido" id="lista" style="gap:10px"></div>
+  </section>
+</main>
+
+<!-- ===================== DETALLE ===================== -->
+<dialog id="detalle" aria-labelledby="d-alumno">
+  <div class="screen" style="min-height:100%">
+    <header class="top">
+      <button class="icon-btn" type="button" id="d-cerrar" aria-label="Volver a la bandeja"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+      <div class="top__txt"><span class="top__titulo" id="d-alumno"></span><span class="top__sub" id="d-hora"></span></div>
+      <span class="estado" id="d-estado"></span>
+    </header>
+    <div class="contenido">
+      <div class="caja-tel">
+        <span class="mini-titulo">Responder al número</span>
+        <span class="tel-grande" id="d-tel"></span>
+        <div class="dos">
+          <a class="btn btn--verde" id="d-wa" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn btn--primario" id="d-llamar" style="height:48px;font-size:15px">Llamar</a>
+        </div>
+        <span class="ayuda" id="d-cuenta"></span>
+      </div>
+      <dl class="resumen" id="d-resumen"></dl>
+      <div class="caja" id="d-id-caja" hidden>
+        <span class="etiqueta">Identificación de quien recibe</span>
+        <img id="d-id" class="id-grande" alt="Identificación adjunta por la familia">
+      </div>
+      <button class="btn btn--primario" type="button" id="d-atender" style="margin-top:auto"></button>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.14.1/firebase-messaging-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="common.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+  const A = window.App;
+  const { auth, db } = A;
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  let solicitudes = [], contactos = [], tab = 'nuevas', abierta = null;
+  let unsubs = [];
+
+  function ir(id) { $$('.screen').forEach((s) => { if (s.closest('dialog')) return; s.hidden = s.id !== id; }); }
+  $$('[data-salir]').forEach((b) => b.addEventListener('click', () => auth.signOut()));
+
+  $('#form-login').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const e = $('#login-error'); e.hidden = true;
+    try { await auth.signInWithEmailAndPassword($('#l-correo').value.trim(), $('#l-clave').value); }
+    catch (err) { e.textContent = A.errorAuth(err); e.hidden = false; }
+  });
+
+  auth.onAuthStateChanged(async (u) => {
+    unsubs.forEach((f) => f()); unsubs = [];
+    if (!u) { ir('s-login'); return; }
+    let esCoord = false;
+    try { const r = await db.collection('roles').doc(u.uid).get(); esCoord = r.exists && r.data().rol === 'coordinacion'; }
+    catch (e) { console.warn(e); }
+    if (!esCoord) {
+      $('#sinpermiso-uid').textContent = 'UID de esta cuenta (para darle permiso): ' + u.uid;
+      ir('s-sinpermiso'); return;
+    }
+    ir('s-bandeja');
+    escuchar();
+    A.activarAvisos('coordinacion', { silencioso: true });
+    if (window.Notification && Notification.permission !== 'granted') {
+      A.toast('Toca la campana para recibir las solicitudes como notificación en este celular.');
+    }
+  });
+
+  $('#btn-avisos').addEventListener('click', () => A.activarAvisos('coordinacion'));
+  A.escucharEnPrimerPlano((p) => {
+    const n = p.notification || {};
+    A.toast((n.title ? n.title + ' — ' : '') + (n.body || ''));
+  });
+
+  function escuchar() {
+    unsubs.push(db.collection('solicitudes').orderBy('creada', 'desc').limit(150).onSnapshot((s) => {
+      solicitudes = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      pintar();
+      if (abierta) { const x = solicitudes.find((y) => y.id === abierta); if (x) llenarDetalle(x); }
+    }, (e) => { console.error(e); A.toast('Error al leer solicitudes: ' + e.code); }));
+    unsubs.push(db.collection('contactos').orderBy('creado', 'desc').limit(60).onSnapshot((s) => {
+      contactos = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      if (tab === 'contactos') pintar();
+    }, (e) => console.warn(e)));
+  }
+
+  $$('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+    tab = b.dataset.tab;
+    $$('[data-tab]').forEach((t) => t.setAttribute('aria-selected', String(t === b)));
+    pintar();
+  }));
+
+  function pintar() {
+    const nuevas = solicitudes.filter((s) => s.estado === 'nueva').length;
+    $('#contador').textContent = nuevas + (nuevas === 1 ? ' nueva' : ' nuevas');
+    $('#contador').hidden = nuevas === 0;
+    const lista = $('#lista'); lista.innerHTML = '';
+
+    if (tab === 'contactos') {
+      if (!contactos.length) { lista.innerHTML = '<div class="vacio">Sin contactos registrados.</div>'; return; }
+      contactos.forEach((c) => {
+        const el = document.createElement('div'); el.className = 'item';
+        el.innerHTML = '<span class="fila__txt"><b>' + A.esc(c.alumno || c.email) + '</b>' +
+          '<span>Abrió: ' + A.esc(A.CANALES[c.canal] || c.canal) + '</span>' +
+          '<small>' + A.esc(c.telefono ? A.telBonito(c.telefono) + ' · ' : '') + A.esc(c.email) + ' · ' + A.hora(c.creado) + '</small></span>';
+        lista.appendChild(el);
+      });
+      return;
+    }
+
+    const filtradas = solicitudes.filter((s) =>
+      tab === 'todas' || (tab === 'nuevas' && s.estado === 'nueva') || s.turno === tab);
+    if (!filtradas.length) { lista.innerHTML = '<div class="vacio">' + (tab === 'nuevas' ? 'No hay solicitudes pendientes.' : 'Sin solicitudes.') + '</div>'; return; }
+    filtradas.forEach((s) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'item';
+      b.innerHTML = '<span class="pill pill--' + s.turno + '">' + A.TURNOS[s.turno] + '</span>' +
+        '<span class="fila__txt"><b>' + A.esc(s.alumno) + '</b><span>' + A.esc(A.TIPOS[s.tipo]) + ' · ' + A.esc(A.fechaLarga(s.fecha)) + '</span>' +
+        '<small>' + A.telBonito(s.telefono) + ' · ' + A.hora(s.creada) + '</small></span>' +
+        '<span class="estado estado--' + s.estado + '">' + (s.estado === 'atendida' ? 'Atendida' : 'Nueva') + '</span>';
+      b.addEventListener('click', () => abrir(s.id));
+      lista.appendChild(b);
+    });
+  }
+
+  /* ---------- Detalle ---------- */
+  const dlg = $('#detalle');
+  function abrir(id) {
+    const s = solicitudes.find((x) => x.id === id); if (!s) return;
+    abierta = id; llenarDetalle(s);
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  function cerrar() { abierta = null; if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+  $('#d-cerrar').addEventListener('click', cerrar);
+  dlg.addEventListener('close', () => { abierta = null; });
+
+  function llenarDetalle(s) {
+    $('#d-alumno').textContent = s.alumno;
+    $('#d-hora').textContent = 'Recibida: ' + A.hora(s.creada);
+    const e = $('#d-estado'); e.className = 'estado estado--' + s.estado; e.textContent = s.estado === 'atendida' ? 'Atendida' : 'Nueva';
+    $('#d-tel').textContent = '+52 ' + A.telBonito(s.telefono);
+    const msg = 'Hola, le escribe Coordinación de Transporte del Colegio Bilbao sobre la solicitud de ' + s.alumno +
+      ' (' + A.TURNOS[s.turno].toLowerCase() + ', ' + A.TIPOS[s.tipo].toLowerCase() + ', ' + A.fechaLarga(s.fecha) + '): ';
+    $('#d-wa').href = 'https://wa.me/52' + A.soloDigitos(s.telefono).slice(-10) + '?text=' + encodeURIComponent(msg);
+    $('#d-llamar').href = 'tel:+52' + A.soloDigitos(s.telefono).slice(-10);
+    $('#d-cuenta').textContent = 'Cuenta: ' + (s.email || '—');
+    const filas = [['Turno', A.TURNOS[s.turno]], ['Día', A.fechaLarga(s.fecha)], ['Cambio', A.TIPOS[s.tipo]]];
+    if (s.direccion) filas.push(['Dirección', s.direccion]);
+    if (s.recibe) filas.push(['Recibe', s.recibe]);
+    if (s.estado === 'atendida') filas.push(['Atendida', A.hora(s.atendidaEn) + (s.atendidaPor ? ' · ' + s.atendidaPor : '')]);
+    $('#d-resumen').innerHTML = filas.map((f) => '<div><dt>' + f[0] + '</dt><dd>' + A.esc(f[1]) + '</dd></div>').join('');
+    $('#d-id-caja').hidden = !s.identificacion;
+    if (s.identificacion && s.identificacion.startsWith('data:image/')) $('#d-id').src = s.identificacion;
+    const b = $('#d-atender');
+    b.textContent = s.estado === 'atendida' ? 'Regresar a "nueva"' : 'Marcar como atendida (avisa a la familia)';
+    b.className = s.estado === 'atendida' ? 'btn btn--borde' : 'btn btn--primario';
+    b.style.marginTop = 'auto';
+  }
+
+  $('#d-atender').addEventListener('click', async () => {
+    const s = solicitudes.find((x) => x.id === abierta); if (!s) return;
+    const b = $('#d-atender'); b.disabled = true;
+    const atender = s.estado !== 'atendida';
+    try {
+      await db.collection('solicitudes').doc(s.id).update(atender
+        ? { estado: 'atendida', atendidaEn: A.TS(), atendidaPor: auth.currentUser.email || '' }
+        : { estado: 'nueva', atendidaEn: null, atendidaPor: '' });
+      A.toast(atender ? 'Marcada como atendida. La familia recibe el aviso.' : 'Regresó a pendientes.');
+    } catch (e) { console.error(e); A.toast('No se pudo actualizar (' + e.code + ').'); }
+    b.disabled = false;
+  });
+});
+</script>
+</body>
+</html>
