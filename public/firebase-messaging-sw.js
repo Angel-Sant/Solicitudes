@@ -8,7 +8,7 @@ firebase.initializeApp(self.APP_CONFIG.firebase);
 // y al tocarlos abre la página indicada. No hace falta más código aquí.
 firebase.messaging();
 
-const CACHE = 'solicitudes-v2';   // súbele el número cuando publiques cambios
+const CACHE = 'solicitudes-v3';   // súbele el número cuando publiques cambios
 const ARCHIVOS = [
   './', './index.html', './coordinacion.html', './styles.css', './common.js',
   './firebase-config.js', './manifest.json', './manifest-coordinacion.json',

@@ -32,8 +32,13 @@ service cloud.firestore {
         && (!('identificacion' in request.resource.data) || request.resource.data.identificacion.size() < 900000);
       // Solo coordinación cambia el estado (y nada más).
       allow update: if esCoord()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidaEn', 'atendidaPor']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'atendidaEn', 'atendidaPor', 'padronId']);
       allow delete: if false;
+    }
+
+    // Padrón de rutas (nombres de alumnos): solo coordinación lo lee y lo cambia.
+    match /config/{doc} {
+      allow read, write: if esCoord();
     }
 
     match /contactos/{id} {

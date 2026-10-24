@@ -27,6 +27,10 @@
   .tel-grande { font-size: 26px; font-weight: 800; letter-spacing: .3px; }
   .caja-tel { background: #fff; border: 2px solid var(--azul); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
   .id-grande { width: 100%; border-radius: 12px; background: #fff; }
+  .resumen-rutas { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .resumen-rutas .r { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fondo); font-variant-numeric: tabular-nums; }
+  .resumen-rutas .alerta-txt { color: var(--rojo); font-weight: 700; }
+  select.input { appearance: auto; }
 </style>
 </head>
 <body>
@@ -71,9 +75,40 @@
         <button class="tab" role="tab" data-tab="manana" aria-selected="false">Mañana</button>
         <button class="tab" role="tab" data-tab="tarde" aria-selected="false">Tarde</button>
         <button class="tab" role="tab" data-tab="contactos" aria-selected="false">Contactos</button>
+        <button class="tab" role="tab" data-tab="listas" aria-selected="false">Listas</button>
       </div>
     </header>
     <div class="contenido" id="lista" style="gap:10px"></div>
+
+    <!-- ===================== LISTAS (Excel del día) ===================== -->
+    <div class="contenido" id="panel-listas" hidden>
+      <div class="caja">
+        <span class="etiqueta">Lista del día para las rutas</span>
+        <div class="dos">
+          <div class="campo"><label for="x-fecha">Día</label><input id="x-fecha" class="input" type="date"></div>
+          <div class="campo"><label for="x-turno">Turno</label>
+            <select id="x-turno" class="input"><option value="tarde">Tarde</option><option value="manana">Mañana</option></select></div>
+        </div>
+        <div id="x-resumen" class="resumen-rutas"></div>
+        <button id="x-descargar" class="btn btn--primario" type="button">Descargar Excel del día</button>
+        <span class="ayuda">Una hoja por ruta lista para imprimir, más una hoja de cambios y otra de casos por revisar.</span>
+      </div>
+
+      <div class="caja">
+        <span class="etiqueta">Padrón de rutas</span>
+        <span class="ayuda" id="p-info" style="font-size:14px">Cargando padrón…</span>
+        <div id="p-confirmar" class="aviso" hidden>
+          <span id="p-confirmar-txt"></span>
+          <div class="dos">
+            <button id="p-guardar" class="btn btn--primario" type="button" style="height:48px;font-size:15px">Guardar padrón</button>
+            <button id="p-cancelar" class="btn btn--borde" type="button">Cancelar</button>
+          </div>
+        </div>
+        <label class="btn btn--borde" for="p-archivo" style="cursor:pointer">Importar padrón (Excel)</label>
+        <input id="p-archivo" type="file" accept=".xlsx" style="position:absolute;width:1px;height:1px;opacity:0">
+        <button id="p-descargar" class="btn btn--borde" type="button">Descargar padrón actual</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -96,6 +131,11 @@
         <span class="ayuda" id="d-cuenta"></span>
       </div>
       <dl class="resumen" id="d-resumen"></dl>
+      <div class="caja">
+        <label class="etiqueta" for="d-padron">Alumno en el padrón</label>
+        <select id="d-padron" class="input"></select>
+        <span class="ayuda" id="d-padron-ayuda"></span>
+      </div>
       <div class="caja" id="d-id-caja" hidden>
         <span class="etiqueta">Identificación de quien recibe</span>
         <img id="d-id" class="id-grande" alt="Identificación adjunta por la familia">
@@ -166,6 +206,9 @@ document.addEventListener('DOMContentLoaded', function () {
       contactos = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
       if (tab === 'contactos') pintar();
     }, (e) => console.warn(e)));
+    unsubs.push(db.collection('config').doc('padron').onSnapshot((d) => {
+      ponerPadron(d.exists ? (d.data().alumnos || []) : [], d.exists ? d.data() : null);
+    }, (e) => { console.warn(e); $('#p-info').textContent = 'No se pudo leer el padrón (' + e.code + ').'; }));
   }
 
   $$('[data-tab]').forEach((b) => b.addEventListener('click', () => {
@@ -179,6 +222,9 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#contador').textContent = nuevas + (nuevas === 1 ? ' nueva' : ' nuevas');
     $('#contador').hidden = nuevas === 0;
     const lista = $('#lista'); lista.innerHTML = '';
+    lista.hidden = tab === 'listas';
+    $('#panel-listas').hidden = tab !== 'listas';
+    if (tab === 'listas') { pintarResumen(); return; }
 
     if (tab === 'contactos') {
       if (!contactos.length) { lista.innerHTML = '<div class="vacio">Sin contactos registrados.</div>'; return; }
@@ -232,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (s.recibe) filas.push(['Recibe', s.recibe]);
     if (s.estado === 'atendida') filas.push(['Atendida', A.hora(s.atendidaEn) + (s.atendidaPor ? ' · ' + s.atendidaPor : '')]);
     $('#d-resumen').innerHTML = filas.map((f) => '<div><dt>' + f[0] + '</dt><dd>' + A.esc(f[1]) + '</dd></div>').join('');
+    llenarSelectPadron(s);
     $('#d-id-caja').hidden = !s.identificacion;
     if (s.identificacion && s.identificacion.startsWith('data:image/')) $('#d-id').src = s.identificacion;
     const b = $('#d-atender');
@@ -251,6 +298,327 @@ document.addEventListener('DOMContentLoaded', function () {
       A.toast(atender ? 'Marcada como atendida. La familia recibe el aviso.' : 'Regresó a pendientes.');
     } catch (e) { console.error(e); A.toast('No se pudo actualizar (' + e.code + ').'); }
     b.disabled = false;
+  });
+
+  /* =====================================================================
+     PADRÓN Y LISTAS DEL DÍA
+     ===================================================================== */
+  // Lugares para alumnos por unidad (ajústalo si cambia).
+  const LUGARES = { 1: 12, 2: 19, 3: 18, 4: 19, 5: 19, 6: 19 };
+  const VACIAS = ['DE', 'LA', 'DEL', 'LOS', 'LAS', 'Y'];
+  let padron = [], padronMap = {}, padronPendiente = null;
+
+  const norm = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const tokens = (s) => norm(s).split(' ').filter((t) => t && VACIAS.indexOf(t) === -1);
+  const idDe = (nombre) => norm(nombre).replace(/ /g, '_');
+
+  /** Ruta que usa el alumno en ese turno ('manana' | 'tarde'), o null. */
+  function rutaTurno(a, turno) {
+    const nums = (String(a[turno] || '').match(/\d+/g) || []).map(Number);
+    if (!nums.length) return null;
+    if (nums.length === 1) return nums[0];
+    return nums.indexOf(Number(a.ruta)) > -1 ? Number(a.ruta) : nums[0];
+  }
+
+  function ponerPadron(lista, meta) {
+    padron = lista.map((a) => Object.assign({}, a, { id: a.id || idDe(a.nombre), tok: tokens(a.nombre) }));
+    padronMap = {}; padron.forEach((a) => { padronMap[a.id] = a; });
+    const rutas = Array.from(new Set(padron.map((a) => a.ruta).filter(Boolean))).sort();
+    $('#p-info').textContent = padron.length
+      ? padron.length + ' alumnos en ' + rutas.length + ' rutas' + (meta && meta.actualizado ? ' · actualizado ' + A.hora(meta.actualizado) : '')
+      : 'Todavía no hay padrón. Importa el Excel de rutas para poder generar las listas.';
+    if (tab === 'listas') pintarResumen();
+    if (abierta) { const x = solicitudes.find((y) => y.id === abierta); if (x) llenarSelectPadron(x); }
+  }
+
+  /** Busca en el padrón el nombre que escribió la familia. */
+  function buscarAlumno(texto) {
+    const q = tokens(texto);
+    if (q.length < 2 || !padron.length) return null;
+    const igual = (t, u) => t === u || (t.length >= 4 && u.length >= 4 && (t.indexOf(u) === 0 || u.indexOf(t) === 0));
+    const puntos = padron.map((a) => ({ a, n: q.filter((t) => a.tok.some((u) => igual(t, u))).length }));
+    const todos = puntos.filter((p) => p.n === q.length);
+    if (todos.length === 1) return { id: todos[0].a.id, seguro: true };
+    if (todos.length > 1) return null; // ambiguo: que coordinación elija
+    const max = Math.max.apply(null, puntos.map((p) => p.n));
+    const mejores = puntos.filter((p) => p.n === max);
+    if (max >= 2 && max >= q.length - 1 && mejores.length === 1) return { id: mejores[0].a.id, seguro: false };
+    return null;
+  }
+  function alumnoDe(s) {
+    if (s.padronId && padronMap[s.padronId]) return { a: padronMap[s.padronId], como: 'elegido' };
+    const m = buscarAlumno(s.alumno);
+    return m ? { a: padronMap[m.id], como: m.seguro ? 'automático' : 'parecido' } : { a: null, como: 'sin coincidencia' };
+  }
+
+  /* ---------- Selector del padrón en el detalle ---------- */
+  function llenarSelectPadron(s) {
+    const sel = $('#d-padron');
+    const m = alumnoDe(s);
+    const ops = ['<option value="">— Sin asignar —</option>'].concat(
+      padron.slice().sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'))
+        .map((a) => '<option value="' + A.esc(a.id) + '">' + A.esc(a.nombre) + ' · R' + A.esc(a.ruta) + '</option>'));
+    sel.innerHTML = ops.join('');
+    sel.value = m.a ? m.a.id : '';
+    $('#d-padron-ayuda').textContent = !padron.length ? 'Importa el padrón en la pestaña Listas.'
+      : m.como === 'elegido' ? 'Asignado por coordinación.'
+      : m.como === 'automático' ? 'Encontrado automáticamente por el nombre.'
+      : m.como === 'parecido' ? 'Nombre parecido: confirma que sea el alumno correcto.'
+      : 'No se encontró el nombre. Elige al alumno para que entre en la lista del día.';
+  }
+  $('#d-padron').addEventListener('change', async () => {
+    if (!abierta) return;
+    try {
+      await db.collection('solicitudes').doc(abierta).update({ padronId: $('#d-padron').value || '' });
+      A.toast('Alumno asignado.');
+    } catch (e) { console.error(e); A.toast('No se pudo guardar (' + e.code + ').'); }
+  });
+
+  /* ---------- Armar la lista del día ---------- */
+  function armarLista(fecha, turno, reqs) {
+    const porRuta = {};
+    padron.forEach((a) => { const r = rutaTurno(a, turno); if (r) (porRuta[r] = porRuta[r] || []).push({ a: a, req: null }); });
+    const ordenadas = reqs.filter((s) => s.turno === turno && s.fecha === fecha)
+      .sort((x, y) => ((x.creada && x.creada.toMillis ? x.creada.toMillis() : 0) - (y.creada && y.creada.toMillis ? y.creada.toMillis() : 0)));
+    const porAlumno = {}, revisar = [], cambios = [];
+    ordenadas.forEach((s) => {
+      const m = alumnoDe(s);
+      cambios.push({ s: s, a: m.a, como: m.como });
+      if (!m.a) { revisar.push({ s: s, a: null, motivo: 'No se encontró en el padrón' }); return; }
+      if (m.como === 'parecido') revisar.push({ s: s, a: m.a, motivo: 'Nombre parecido, se aplicó a ' + m.a.nombre + ': confirmar' });
+      porAlumno[m.a.id] = s; // si hay varias, gana la más reciente
+    });
+    Object.keys(porRuta).forEach((r) => porRuta[r].forEach((f) => { f.req = porAlumno[f.a.id] || null; }));
+    Object.keys(porAlumno).forEach((id) => {
+      const a = padronMap[id], s = porAlumno[id];
+      if (!rutaTurno(a, turno)) revisar.push({ s: s, a: a, motivo: 'Según el padrón no usa transporte en este turno' });
+    });
+    const rutas = Object.keys(porRuta).map(Number).sort((x, y) => x - y).map((r) => {
+      const filas = porRuta[r];
+      const no = filas.filter((f) => f.req && (f.req.tipo === 'no_baja' || f.req.tipo === 'no_sube')).length;
+      const otro = filas.filter((f) => f.req && (f.req.tipo === 'baja_distinto' || f.req.tipo === 'sube_distinto')).length;
+      return { ruta: r, filas: filas, total: filas.length, no: no, otro: otro, viajan: filas.length - no };
+    });
+    return { fecha: fecha, turno: turno, rutas: rutas, cambios: cambios, revisar: revisar };
+  }
+
+  function pintarResumen() {
+    if (!$('#x-fecha').value) $('#x-fecha').value = A.hoyISO();
+    const cont = $('#x-resumen');
+    if (!padron.length) { cont.innerHTML = '<div class="r">Importa el padrón para ver la lista.</div>'; return; }
+    const L = armarLista($('#x-fecha').value, $('#x-turno').value, solicitudes);
+    let h = L.rutas.map((r) => '<div class="r"><b>Ruta ' + r.ruta + '</b><span>' + r.viajan + ' de ' + r.total +
+      (r.no ? ' · ' + r.no + ' no' : '') + (r.otro ? ' · ' + r.otro + ' otro lugar' : '') + '</span></div>').join('');
+    h += '<div class="r"><span>Cambios del día</span><b>' + L.cambios.length + '</b></div>';
+    if (L.revisar.length) h += '<div class="r alerta-txt"><span>Por revisar</span><b>' + L.revisar.length + '</b></div>';
+    cont.innerHTML = h;
+  }
+  $('#x-fecha').addEventListener('change', pintarResumen);
+  $('#x-turno').addEventListener('change', pintarResumen);
+
+  /* ---------- Excel ---------- */
+  let excelListo = null;
+  function cargarExcelJS() {
+    if (window.ExcelJS) return Promise.resolve();
+    if (!excelListo) excelListo = new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+      sc.onload = res; sc.onerror = () => { excelListo = null; rej(new Error('No se pudo cargar el generador de Excel. Revisa tu conexión.')); };
+      document.head.appendChild(sc);
+    });
+    return excelListo;
+  }
+  function bajar(buffer, nombre) {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  const AZUL = 'FF4D8ABB', GRIS = 'FFEDEFF2', AMAR = 'FFFFF3D1', ROJO = 'FFA8261D';
+  const borde = { top: { style: 'thin', color: { argb: 'FFC9D3DE' } }, left: { style: 'thin', color: { argb: 'FFC9D3DE' } }, bottom: { style: 'thin', color: { argb: 'FFC9D3DE' } }, right: { style: 'thin', color: { argb: 'FFC9D3DE' } } };
+  function hoja(wb, nombre, titulo, subtitulo, encabezados, anchos) {
+    const ws = wb.addWorksheet(nombre, { pageSetup: { paperSize: 1, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } } });
+    const n = encabezados.length;
+    ws.mergeCells(1, 1, 1, n); ws.getCell(1, 1).value = titulo;
+    ws.getCell(1, 1).font = { name: 'Calibri', size: 16, bold: true }; ws.getCell(1, 1).alignment = { horizontal: 'center' };
+    ws.mergeCells(2, 1, 2, n); ws.getCell(2, 1).value = subtitulo;
+    ws.getCell(2, 1).font = { size: 10, italic: true, color: { argb: 'FF55657A' } }; ws.getCell(2, 1).alignment = { horizontal: 'center' };
+    const h = ws.getRow(4); h.values = encabezados;
+    h.eachCell((c) => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } }; c.alignment = { horizontal: 'center', vertical: 'middle' }; c.border = borde; });
+    h.height = 20;
+    anchos.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+    ws.pageSetup.printTitlesRow = '4:4';
+    ws.views = [{ state: 'frozen', ySplit: 4 }];
+    return ws;
+  }
+  function fila(ws, valores, opciones) {
+    const r = ws.addRow(valores);
+    r.eachCell({ includeEmpty: true }, (c, i) => {
+      c.border = borde; c.alignment = { vertical: 'middle', wrapText: true, horizontal: (opciones && opciones.centrar || []).indexOf(i) > -1 ? 'center' : 'left' };
+      if (opciones && opciones.fill) c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opciones.fill } };
+      if (opciones && opciones.font) c.font = Object.assign({ name: 'Calibri', size: 11 }, opciones.font);
+    });
+    return r;
+  }
+  function detalleReq(s) {
+    const p = [];
+    if (s.direccion) p.push('Dirección: ' + s.direccion);
+    if (s.recibe) p.push('Recibe: ' + s.recibe);
+    if (s.tipo === 'baja_distinto') p.push(s.identificacion ? 'Con identificación' : 'Sin identificación');
+    p.push('Tel. ' + A.telBonito(s.telefono));
+    if (s.estado !== 'atendida') p.push('PENDIENTE DE CONFIRMAR');
+    return p.join(' · ');
+  }
+
+  $('#x-descargar').addEventListener('click', async () => {
+    if (!padron.length) { A.toast('Primero importa el padrón de rutas.'); return; }
+    const b = $('#x-descargar'); b.disabled = true; b.textContent = 'Generando…';
+    try {
+      await cargarExcelJS();
+      const fecha = $('#x-fecha').value || A.hoyISO(), turno = $('#x-turno').value;
+      const snap = await db.collection('solicitudes').where('fecha', '==', fecha).get();
+      const reqs = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      const L = armarLista(fecha, turno, reqs);
+      const T = turno === 'tarde' ? 'TARDE' : 'MAÑANA', NO = turno === 'tarde' ? 'NO BAJA' : 'NO SUBE';
+      const sub = A.fechaLarga(fecha) + ' · generado ' + new Date().toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+      const wb = new ExcelJS.Workbook(); wb.creator = 'Coordinación de Transporte';
+
+      // Resumen
+      const R = hoja(wb, 'Resumen', 'RESUMEN · ' + T, sub, ['RUTA', 'EN PADRÓN', NO, 'OTRO LUGAR', 'VIAJAN HOY', 'LUGARES'], [10, 13, 12, 13, 13, 11]);
+      L.rutas.forEach((r) => {
+        const lleno = LUGARES[r.ruta] && r.viajan > LUGARES[r.ruta];
+        fila(R, ['Ruta ' + r.ruta, r.total, r.no, r.otro, r.viajan, LUGARES[r.ruta] || ''], { centrar: [1, 2, 3, 4, 5, 6], font: lleno ? { bold: true, color: { argb: ROJO } } : undefined });
+      });
+      fila(R, ['TOTAL', L.rutas.reduce((s, r) => s + r.total, 0), L.rutas.reduce((s, r) => s + r.no, 0), L.rutas.reduce((s, r) => s + r.otro, 0), L.rutas.reduce((s, r) => s + r.viajan, 0), ''], { centrar: [1, 2, 3, 4, 5, 6], font: { bold: true } });
+      if (L.revisar.length) { R.addRow([]); const x = R.addRow(['Hay ' + L.revisar.length + ' solicitud(es) por revisar: ver hoja "Revisar".']); x.getCell(1).font = { bold: true, color: { argb: ROJO } }; }
+
+      // Una hoja por ruta
+      L.rutas.forEach((r) => {
+        const ws = hoja(wb, 'Ruta ' + r.ruta, 'RUTA ' + r.ruta + ' · ' + T, sub, ['#', 'NOMBRE', 'SECCIÓN', 'GRADO', 'HOY', 'DETALLE DEL CAMBIO'], [5, 38, 10, 8, 13, 48]);
+        r.filas.forEach((f, i) => {
+          const s = f.req;
+          if (s && (s.tipo === 'no_baja' || s.tipo === 'no_sube')) {
+            fila(ws, [i + 1, f.a.nombre, f.a.seccion || '', f.a.grado || '', NO, detalleReq(s)], { centrar: [1, 3, 4, 5], fill: GRIS, font: { color: { argb: 'FF6B7280' }, strike: false } });
+            ws.lastRow.getCell(2).font = { name: 'Calibri', size: 11, strike: true, color: { argb: 'FF6B7280' } };
+          } else if (s) {
+            fila(ws, [i + 1, f.a.nombre, f.a.seccion || '', f.a.grado || '', 'OTRO LUGAR', detalleReq(s)], { centrar: [1, 3, 4, 5], fill: AMAR });
+            ws.lastRow.getCell(5).font = { name: 'Calibri', size: 11, bold: true };
+          } else {
+            fila(ws, [i + 1, f.a.nombre, f.a.seccion || '', f.a.grado || '', '✓', f.a[turno] && String(f.a[turno]).indexOf('-') > -1 ? 'Padrón: ' + f.a[turno] : ''], { centrar: [1, 3, 4, 5] });
+          }
+        });
+        ws.addRow([]);
+        const t = ws.addRow(['', 'Viajan hoy: ' + r.viajan + ' de ' + r.total + (LUGARES[r.ruta] ? ' · Lugares: ' + LUGARES[r.ruta] : '')]);
+        t.getCell(2).font = { name: 'Calibri', size: 11, bold: true };
+        ws.addRow([]);
+        ws.addRow(['', 'Firma de la auxiliar: ______________________________']);
+      });
+
+      // Cambios del día
+      const C = hoja(wb, 'Cambios', 'CAMBIOS DEL DÍA · ' + T, sub, ['HORA', 'ESCRITO POR LA FAMILIA', 'ALUMNO EN PADRÓN', 'RUTA', 'CAMBIO', 'DIRECCIÓN', 'RECIBE', 'TELÉFONO', 'ESTADO'], [9, 26, 30, 7, 20, 34, 24, 13, 12]);
+      L.cambios.forEach((c) => {
+        const s = c.s, d = s.creada && s.creada.toDate ? s.creada.toDate() : null;
+        fila(C, [d ? d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' }) : '', s.alumno, c.a ? c.a.nombre : '—', c.a ? (rutaTurno(c.a, turno) || '') : '', A.TIPOS[s.tipo], s.direccion || '', s.recibe || '', A.telBonito(s.telefono), s.estado === 'atendida' ? 'Atendida' : 'Pendiente'],
+          { centrar: [1, 4, 8, 9], fill: c.a ? undefined : AMAR });
+      });
+      if (!L.cambios.length) C.addRow(['', 'Sin solicitudes para este día y turno.']);
+
+      // Revisar
+      if (L.revisar.length) {
+        const V = hoja(wb, 'Revisar', 'POR REVISAR · ' + T, sub, ['ESCRITO POR LA FAMILIA', 'MOTIVO', 'CAMBIO', 'DIRECCIÓN', 'RECIBE', 'TELÉFONO'], [28, 40, 20, 34, 24, 13]);
+        L.revisar.forEach((v) => fila(V, [v.s.alumno, v.motivo, A.TIPOS[v.s.tipo], v.s.direccion || '', v.s.recibe || '', A.telBonito(v.s.telefono)], { fill: AMAR, centrar: [6] }));
+      }
+
+      bajar(await wb.xlsx.writeBuffer(), 'Lista_' + (turno === 'tarde' ? 'Tarde' : 'Manana') + '_' + fecha + '.xlsx');
+      A.toast(L.revisar.length ? 'Excel listo. Hay ' + L.revisar.length + ' caso(s) por revisar.' : 'Excel listo.');
+    } catch (e) { console.error(e); A.toast(e.message || 'No se pudo generar el Excel.'); }
+    b.disabled = false; b.textContent = 'Descargar Excel del día';
+  });
+
+  /* ---------- Importar / descargar padrón ---------- */
+  function celdaTxt(v) {
+    if (v == null) return '';
+    if (typeof v === 'object') {
+      if (v.richText) return v.richText.map((t) => t.text).join('');
+      if (v.text != null) return celdaTxt(v.text);
+      if (v.result != null) return String(v.result);
+      if (v instanceof Date) return v.toLocaleDateString('es-MX');
+      return '';
+    }
+    return String(v);
+  }
+  $('#p-archivo').addEventListener('change', async () => {
+    const f = $('#p-archivo').files[0]; $('#p-archivo').value = '';
+    if (!f) return;
+    try {
+      await cargarExcelJS();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(await f.arrayBuffer());
+      const lista = [], vistos = {}, repetidos = [];
+      wb.eachSheet((ws) => {
+        let cols = null;
+        const rutaHoja = (ws.name.match(/\d+/) || [''])[0];
+        ws.eachRow((row) => {
+          const vals = row.values.map(celdaTxt);
+          if (!cols) {
+            if (vals.some((v) => norm(v) === 'NOMBRE')) {
+              cols = {};
+              vals.forEach((v, j) => {
+                const k = norm(v);
+                if (k === 'NOMBRE') cols.nombre = j;
+                else if (k.indexOf('RUTA') === 0) cols.ruta = j;
+                else if (k.indexOf('SE') === 0) cols.seccion = j;
+                else if (k.indexOf('GRA') === 0) cols.grado = j;
+                else if (k.indexOf('MA') === 0 || k === 'M') cols.manana = j;
+                else if (k.indexOf('TAR') === 0 || k === 'T') cols.tarde = j;
+                else if (k.indexOf('NOTA') === 0) cols.notas = j;
+              });
+            }
+            return;
+          }
+          const nombre = String(vals[cols.nombre] || '').replace(/\s+/g, ' ').trim();
+          if (!nombre || norm(nombre) === 'NOMBRE') return;
+          const g = (k) => (cols[k] != null ? String(vals[cols[k]] || '').trim() : '');
+          let ruta = cols.ruta != null ? g('ruta').replace(/\D/g, '') : rutaHoja;
+          const a = { nombre: nombre.toUpperCase(), seccion: g('seccion'), grado: g('grado'), manana: g('manana'), tarde: g('tarde'), notas: g('notas') };
+          if (!ruta) ruta = String(rutaTurno(Object.assign({ ruta: '' }, a), 'tarde') || rutaTurno(Object.assign({ ruta: '' }, a), 'manana') || '');
+          a.ruta = ruta; a.id = idDe(a.nombre);
+          if (vistos[a.id]) { repetidos.push(a.nombre); return; }
+          vistos[a.id] = true; lista.push(a);
+        });
+      });
+      if (!lista.length) { A.toast('No encontré alumnos. El archivo debe tener una columna llamada NOMBRE.'); return; }
+      padronPendiente = lista;
+      const rutas = Array.from(new Set(lista.map((a) => a.ruta).filter(Boolean))).sort();
+      const sinT = lista.filter((a) => !rutaTurno(a, 'tarde')).length;
+      $('#p-confirmar-txt').textContent = 'Se leyeron ' + lista.length + ' alumnos en ' + rutas.length + ' rutas (' + rutas.map((r) => 'R' + r).join(', ') + '). ' +
+        (sinT ? sinT + ' no usan transporte en la tarde. ' : '') + (repetidos.length ? repetidos.length + ' nombre(s) repetido(s) se omitieron. ' : '') +
+        'Al guardar se reemplaza el padrón actual.';
+      $('#p-confirmar').hidden = false;
+    } catch (e) { console.error(e); A.toast('No se pudo leer el archivo: ' + (e.message || e)); }
+  });
+  $('#p-cancelar').addEventListener('click', () => { padronPendiente = null; $('#p-confirmar').hidden = true; });
+  $('#p-guardar').addEventListener('click', async () => {
+    if (!padronPendiente) return;
+    const b = $('#p-guardar'); b.disabled = true;
+    try {
+      await db.collection('config').doc('padron').set({ alumnos: padronPendiente, actualizado: A.TS(), por: auth.currentUser.email || '' });
+      padronPendiente = null; $('#p-confirmar').hidden = true; A.toast('Padrón guardado.');
+    } catch (e) { console.error(e); A.toast('No se pudo guardar el padrón (' + e.code + ').'); }
+    b.disabled = false;
+  });
+  $('#p-descargar').addEventListener('click', async () => {
+    if (!padron.length) { A.toast('Todavía no hay padrón guardado.'); return; }
+    try {
+      await cargarExcelJS();
+      const wb = new ExcelJS.Workbook();
+      const ws = hoja(wb, 'Padrón', 'PADRÓN DE RUTAS · TRANSPORTE BILBAO', 'MAÑANA y TARDE: ruta que usa en ese turno (R 1, R 2…). Vacío = no usa transporte en ese turno.', ['RUTA', 'NOMBRE', 'SECCIÓN', 'GRADO', 'MAÑANA', 'TARDE', 'NOTAS'], [7, 40, 10, 9, 10, 10, 40]);
+      padron.slice().sort((x, y) => (Number(x.ruta) - Number(y.ruta)) || x.nombre.localeCompare(y.nombre, 'es'))
+        .forEach((a) => fila(ws, [a.ruta, a.nombre, a.seccion, a.grado, a.manana, a.tarde, a.notas || ''], { centrar: [1, 3, 4, 5, 6] }));
+      bajar(await wb.xlsx.writeBuffer(), 'Padron_Rutas_' + A.hoyISO() + '.xlsx');
+    } catch (e) { console.error(e); A.toast(e.message || 'No se pudo generar el Excel.'); }
   });
 });
 </script>

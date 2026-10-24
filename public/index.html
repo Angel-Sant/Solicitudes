@@ -265,6 +265,11 @@ document.addEventListener('DOMContentLoaded', function () {
   auth.onAuthStateChanged(async (u) => {
     if (unsubMis) { unsubMis(); unsubMis = null; }
     if (!u) { ir('s-login'); return; }
+    // Si la cuenta es de coordinación, se va directo a su bandeja.
+    try {
+      const r = await db.collection('roles').doc(u.uid).get();
+      if (r.exists && r.data().rol === 'coordinacion') { window.location.replace('coordinacion.html'); return; }
+    } catch (e) { console.warn('rol', e); }
     $('#inicio-correo').textContent = u.email || '';
     const ref = db.collection('usuarios').doc(u.uid);
     try {
